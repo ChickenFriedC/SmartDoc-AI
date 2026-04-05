@@ -1,0 +1,37 @@
+services:
+  backend:
+    build: ./backend
+    container_name: smartdoc_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      DJANGO_DEBUG: "True"
+      DJANGO_ALLOWED_HOSTS: "*"
+      OLLAMA_BASE_URL: "http://ollama:11434"
+      OLLAMA_MODEL: "qwen2.5:7b"
+    depends_on:
+      - ollama
+
+  frontend:
+    build: ./frontend
+    container_name: smartdoc_frontend
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+  ollama:
+    image: ollama/ollama
+    container_name: smartdoc_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+volumes:
+  ollama_data:
