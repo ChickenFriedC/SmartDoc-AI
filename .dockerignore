@@ -1,9 +1,0 @@
-**/__pycache__
-**/*.pyc
-**/*.pyo
-**/*.pyd
-**/node_modules
-**/venv
-**/.venv
-.git
-.gitignore

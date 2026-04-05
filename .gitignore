@@ -1,15 +1,17 @@
-# Python
-__pycache__/
-*.py[cod]
-*.sqlite3
-backend/venv/
-backend/.env
+# Python environment
+venv/
+.venv/
+env/
 
-# Node
-frontend/node_modules/
-frontend/dist/
-
-# OS / IDE
+# IDE
 .vscode/
 .idea/
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Project specifics
+__pycache__/
+*.pyc
+temp.pdf
