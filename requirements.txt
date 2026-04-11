@@ -7,6 +7,6 @@ huggingface-hub
 ollama
 pdfplumber
 pypdf
-numpy
+numpy==1.26.4
 pandas
 torch
