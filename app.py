@@ -4,15 +4,15 @@ import tempfile
 from typing import List, Tuple, Dict, Any
 
 import streamlit as st
-from docx import Document as DocxDocument
-
-from langchain_core.documents import Document
+import os
+import hashlib
+import pickle
+import faiss
 from langchain_community.document_loaders import PDFPlumberLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_community.llms import Ollama
-
 
 # ==========================================
 # CẤU HÌNH TRANG
@@ -319,226 +319,152 @@ st.sidebar.write("**Model:** Qwen2.5:7b")
 st.sidebar.write("**Embeddings:** Multilingual MPNet")
 st.sidebar.write("**Status:** Local Runtime (Ollama)")
 
-st.sidebar.subheader("Chunk Strategy")
-chunk_size = st.sidebar.selectbox(
-    "Chunk size",
-    options=[500, 1000, 1500, 2000],
-    index=1,
-)
-chunk_overlap = st.sidebar.selectbox(
-    "Chunk overlap",
-    options=[50, 100, 200],
-    index=1,
-)
+st.title("📄 SmartDoc AI - Intelligent Document Q&A System")
+st.write("Hệ thống hỏi đáp tài liệu thông minh dựa trên kỹ thuật RAG.")
 
-st.sidebar.caption(compare_chunk_strategy_guidance(chunk_size, chunk_overlap))
-
-st.sidebar.markdown("---")
-st.sidebar.subheader("Lịch sử hội thoại")
-
-if st.session_state.chat_history:
-    for idx, item in enumerate(st.session_state.chat_history, start=1):
-        with st.sidebar.expander(f"Câu {idx}: {item['question'][:35]}...", expanded=False):
-            st.markdown(f"**Hỏi:** {item['question']}")
-            st.markdown(f"**Đáp:** {item['answer']}")
-            st.caption(
-                f"File: {item.get('filename', 'N/A')} | "
-                f"Chunk: {item.get('chunk_size', 'N/A')}/{item.get('chunk_overlap', 'N/A')}"
-            )
-else:
-    st.sidebar.info("Chưa có lịch sử chat.")
-
-st.sidebar.markdown("---")
-
-col_h1, col_h2 = st.sidebar.columns(2)
-
-with col_h1:
-    if st.button("Clear History", use_container_width=True):
-        st.session_state.confirm_clear_history = True
-
-with col_h2:
-    if st.button("Clear Vector Store", use_container_width=True):
-        st.session_state.confirm_clear_vector = True
-
-if st.session_state.confirm_clear_history:
-    st.sidebar.warning("Bạn có chắc muốn xóa toàn bộ lịch sử chat?")
-    c1, c2 = st.sidebar.columns(2)
-    with c1:
-        if st.button("Xác nhận xóa lịch sử", key="confirm_history_delete", use_container_width=True):
-            clear_history()
-            st.sidebar.success("Đã xóa lịch sử chat.")
-    with c2:
-        if st.button("Hủy", key="cancel_history_delete", use_container_width=True):
-            st.session_state.confirm_clear_history = False
-
-if st.session_state.confirm_clear_vector:
-    st.sidebar.warning("Bạn có chắc muốn xóa vector store và tài liệu hiện tại?")
-    c1, c2 = st.sidebar.columns(2)
-    with c1:
-        if st.button("Xác nhận xóa tài liệu", key="confirm_vector_delete", use_container_width=True):
-            clear_vector_store()
-            st.sidebar.success("Đã xóa vector store.")
-    with c2:
-        if st.button("Hủy ", key="cancel_vector_delete", use_container_width=True):
-            st.session_state.confirm_clear_vector = False
-
+# ==========================================
+# Hàm tiện ích: tạo hash cho file PDF
+# ==========================================
+def get_file_hash(file_path):
+    BUF_SIZE = 65536
+    sha256 = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        while True:
+            data = f.read(BUF_SIZE)
+            if not data:
+                break
+            sha256.update(data)
+    return sha256.hexdigest()
 
 # ==========================================
 # GIAO DIỆN CHÍNH
 # ==========================================
-st.title("📄 SmartDoc AI+ - Intelligent Document Q&A System")
-st.write("Hệ thống hỏi đáp tài liệu thông minh hỗ trợ PDF và DOCX, có lưu lịch sử hội thoại, citation và tùy chỉnh chunk strategy.")
+uploaded_file = st.file_uploader("Tải lên tài liệu PDF để bắt đầu", type="pdf")
 
-uploaded_file = st.file_uploader(
-    "Tải lên tài liệu để bắt đầu",
-    type=["pdf", "docx"],
-    help="Hỗ trợ cả PDF và DOCX",
-)
+if uploaded_file:
+    # Kiểm tra dung lượng file (File size validation)
+    if uploaded_file.size > 200 * 1024 * 1024:  # 200MB
+        st.error("❌ File quá lớn, vui lòng chọn file < 200MB")
+    else:
+        # Lưu file tạm để xử lý
+        with open("temp.pdf", "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        
+        st.success("✅ PDF uploaded successfully!")  # Success notification
 
-# ==========================================
-# XỬ LÝ FILE
-# ==========================================
-if uploaded_file is not None:
-    need_reprocess = (
-        st.session_state.vector_store is None
-        or st.session_state.uploaded_filename != uploaded_file.name
-        or st.session_state.last_chunk_config != (chunk_size, chunk_overlap)
-    )
+        # Tạo hash để nhận diện file duy nhất
+        file_hash = get_file_hash("temp.pdf")
+        cache_dir = "src/data/cache"
+        os.makedirs(cache_dir, exist_ok=True)
+        faiss_path = os.path.join(cache_dir, f"{file_hash}.faiss")
+        retriever_path = os.path.join(cache_dir, f"{file_hash}.pkl")
 
-    if need_reprocess:
-        with st.status("Đang xử lý tài liệu...", expanded=True) as status:
-            st.write("1. Đang đọc nội dung tài liệu...")
-            st.write("2. Đang tách chunk theo tham số người dùng...")
-            st.write("3. Đang tạo embeddings...")
-            st.write("4. Đang khởi tạo FAISS vector store...")
+        try:
+            if os.path.exists(faiss_path) and os.path.exists(retriever_path):
+                st.info("⚡ Đang tải lại dữ liệu từ cache...")
+                index = faiss.read_index(faiss_path)
+                with open(retriever_path, "rb") as f:
+                    vector = pickle.load(f)
+                retriever = vector.as_retriever(search_type="similarity", search_kwargs={"k": 3, "fetch_k": 20})
+            else:
+                with st.status("Đang thực hiện quy trình RAG...", expanded=True) as status:
+                    # 3.3.1 Document Loader
+                    st.write("1. Đang tải tài liệu (PDFPlumber)...")
+                    loader = PDFPlumberLoader("temp.pdf")
+                    docs = loader.load()
+                    if not docs:
+                        st.error("❌ Không thể đọc nội dung từ file PDF.")
+                        st.stop()
 
-            try:
-                raw_docs, split_docs, vector_store = process_uploaded_file(
-                    uploaded_file,
-                    chunk_size=chunk_size,
-                    chunk_overlap=chunk_overlap,
-                )
+                    # 3.3.2 Text Splitter
+                    st.write("2. Đang phân mảnh văn bản (RecursiveCharacterTextSplitter)...")
+                    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+                    documents = text_splitter.split_documents(docs)
+                    if not documents:
+                        st.error("❌ Không có văn bản nào được trích xuất từ PDF.")
+                        st.stop()
 
-                st.session_state.raw_docs = raw_docs
-                st.session_state.processed_docs = split_docs
-                st.session_state.vector_store = vector_store
-                st.session_state.retriever = vector_store.as_retriever(
-                    search_type="similarity",
-                    search_kwargs={"k": 3, "fetch_k": 20},
-                )
-                st.session_state.uploaded_filename = uploaded_file.name
-                st.session_state.uploaded_filetype = os.path.splitext(uploaded_file.name)[1].lower()
-                st.session_state.last_chunk_config = (chunk_size, chunk_overlap)
+                    # 3.3.3 Embedding Configuration
+                    st.write("3. Đang tạo vector embedding (Multilingual MPNet)...")
+                    embedder = HuggingFaceEmbeddings(
+                        model_name="sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+                        model_kwargs={'device': 'cpu'},  # đổi sang 'cuda' nếu có GPU
+                        encode_kwargs={'normalize_embeddings': True}
+                    )
 
-                status.update(label="Tài liệu đã sẵn sàng.", state="complete", expanded=False)
+                    # 3.3.4 Retriever Configuration
+                    st.write("4. Đang khởi tạo Vector Store (FAISS)...")
+                    vector = FAISS.from_documents(documents, embedder)
+                    retriever = vector.as_retriever(search_type="similarity", search_kwargs={"k": 3, "fetch_k": 20})
 
-            except Exception as e:
-                status.update(label="Xử lý tài liệu thất bại.", state="error", expanded=True)
-                st.error(f"Lỗi khi xử lý tài liệu: {e}")
+                    # Lưu retriever và FAISS index vào cache
+                    faiss.write_index(vector.index, faiss_path)
+                    with open(retriever_path, "wb") as f:
+                        pickle.dump(vector, f)
 
-    st.success(
-        f"Đã nạp tài liệu: {st.session_state.uploaded_filename} | "
-        f"Chunk size = {chunk_size}, overlap = {chunk_overlap}"
-    )
+                    status.update(label="Hệ thống đã sẵn sàng!", state="complete", expanded=False)
 
-    user_question = st.text_input("💬 Đặt câu hỏi về nội dung tài liệu của bạn:")
+            # 3.3.5 LLM Configuration
+            llm = Ollama(model="qwen2.5:7b", temperature=0.7, top_p=0.9, repeat_penalty=1.1)
 
-    if user_question and st.session_state.retriever is not None:
-        with st.spinner("Đang suy nghĩ..."):
-            try:
-                relevant_docs = st.session_state.retriever.invoke(user_question)
-                context = "\n\n".join([doc.page_content for doc in relevant_docs])
+            # ==========================================
+            # 3.4 PROMPT ENGINEERING (Mục 3.4)
+            # ==========================================
+            user_question = st.text_input("💬 Đặt câu hỏi về nội dung tài liệu của bạn:")
+            
+            if user_question:
+                with st.spinner("Đang suy nghĩ..."):
+                    try:
+                        relevant_docs = retriever.invoke(user_question)
+                        if not relevant_docs:
+                            st.warning("⚠️ Không tìm thấy đoạn văn bản nào liên quan trong tài liệu.")
+                        else:
+                            context = "\n\n".join([doc.page_content for doc in relevant_docs])
 
-                llm = get_llm()
-                prompt = build_prompt(context, user_question)
-                response = llm.invoke(prompt)
+                            # Auto-detect language
+                            vietnamese_chars = 'aaaaeeeiooouuuuyyyyd'
+                            is_vietnamese = any(char in user_question.lower() for char in vietnamese_chars)
 
-                # Lưu lịch sử hội thoại trong session
-                st.session_state.chat_history.append(
-                    {
-                        "question": user_question,
-                        "answer": response,
-                        "filename": st.session_state.uploaded_filename,
-                        "chunk_size": chunk_size,
-                        "chunk_overlap": chunk_overlap,
-                        "sources": [
-                            {
-                                "label": build_source_label(doc),
-                                "content": doc.page_content,
-                                "metadata": doc.metadata,
-                            }
-                            for doc in relevant_docs
-                        ],
-                    }
-                )
+                            if is_vietnamese:
+                                prompt_template = """Su dung ngu canh sau day de tra loi cau hoi.
+Neu ban khong biet, chi can noi la ban khong biet.
+Tra loi ngan gon (3-4 cau) BAT BUOC bang tieng Viet.
 
-                st.subheader("💡 Trả lời")
-                st.write(response)
+Ngu canh: {context}
 
-                st.subheader("📚 Citation / Source Tracking")
-                for i, doc in enumerate(relevant_docs, start=1):
-                    source_label = build_source_label(doc)
-                    highlighted = highlight_snippet(doc.page_content, user_question)
+Cau hoi: {question}
 
-                    with st.expander(f"Nguồn {i}: {source_label}", expanded=False):
-                        st.markdown(
-                            f"""
-                            <div class="source-box">
-                                {highlighted}
-                            </div>
-                            """,
-                            unsafe_allow_html=True,
-                        )
-                        st.caption("Đã highlight các từ khóa liên quan từ câu hỏi trong đoạn ngữ cảnh gốc.")
+Tra loi:"""
+                            else:
+                                prompt_template = """Use the following context to answer the question.
+If you don't know the answer, just say you don't know.
+Keep answer concise (3-4 sentences).
 
-            except Exception as e:
-                st.error(f"Lỗi khi sinh câu trả lời: {e}")
+Context: {context}
 
-    # Hiển thị hội thoại hiện tại ở main area
-    if st.session_state.chat_history:
-        st.markdown("---")
-        st.subheader("🕘 Lịch sử hỏi đáp trong phiên hiện tại")
+Question: {question}
 
-        for idx, item in enumerate(reversed(st.session_state.chat_history), start=1):
-            with st.expander(f"Lượt gần đây {idx}: {item['question']}", expanded=False):
-                st.markdown(f"**Hỏi:** {item['question']}")
-                st.markdown(f"**Đáp:** {item['answer']}")
-                st.caption(
-                    f"File: {item.get('filename', 'N/A')} | "
-                    f"Chunk size: {item.get('chunk_size', 'N/A')} | "
-                    f"Overlap: {item.get('chunk_overlap', 'N/A')}"
-                )
+Answer:"""
 
-                if item.get("sources"):
-                    st.markdown("**Nguồn đã dùng:**")
-                    for s_idx, src in enumerate(item["sources"], start=1):
-                        with st.expander(f"Xem context nguồn {s_idx}: {src['label']}", expanded=False):
-                            st.write(src["content"])
+                            full_prompt = prompt_template.format(context=context, question=user_question)
 
-    st.markdown("---")
-    st.subheader("📊 Gợi ý báo cáo cho mục 8.2.4")
-    st.write(
-        f"""
-        Cấu hình hiện tại:
-        - Chunk size: **{chunk_size}**
-        - Chunk overlap: **{chunk_overlap}**
+                            response = llm.invoke(full_prompt)
 
-        Nhận xét định tính:
-        - {compare_chunk_strategy_guidance(chunk_size, chunk_overlap)}
+                            st.subheader("💡 Trả lời:")
+                            st.write(response)
 
-        Để so sánh độ chính xác, bạn nên:
-        1. Chuẩn bị một bộ 10-20 câu hỏi cố định.
-        2. Chạy lần lượt với các cấu hình:
-           - chunk_size: 500, 1000, 1500, 2000
-           - chunk_overlap: 50, 100, 200
-        3. Ghi nhận:
-           - câu trả lời đúng/sai
-           - có đủ ý không
-           - tốc độ phản hồi
-           - mức độ liên quan của nguồn trích dẫn
-        4. Chọn cấu hình cân bằng nhất giữa độ chính xác và tốc độ.
-        """
-    )
+                            with st.expander("🔍 Xem nguồn tài liệu được sử dụng"):
+                                for i, doc in enumerate(relevant_docs):
+                                    st.markdown(f"**Đoạn trích {i+1}:**")
+                                    st.info(doc.page_content)
+                    except Exception as e:
+                        st.error(f"⚠️ Lỗi xử lý câu hỏi: {str(e)}")
 
+        except Exception as e:
+            st.error(f"⚠️ Lỗi hệ thống: {str(e)}")
+
+        # Dọn dẹp file tạm
+        if os.path.exists("temp.pdf"):
+            os.remove("temp.pdf")
 else:
-    st.info("Vui lòng tải lên một file PDF hoặc DOCX để bắt đầu trò chuyện với tài liệu.")
+    st.info("Vui lòng tải lên một file PDF để bắt đầu trò chuyện với tài liệu.")
