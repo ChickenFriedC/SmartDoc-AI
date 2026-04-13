@@ -10,3 +10,4 @@ pypdf
 numpy
 pandas
 torch
+python-docx
