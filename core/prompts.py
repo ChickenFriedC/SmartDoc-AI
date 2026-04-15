@@ -5,7 +5,7 @@ def build_prompt(context: str, question: str) -> str:
         return f"""Bạn là trợ lý hỏi đáp tài liệu.
 Chỉ trả lời dựa trên ngữ cảnh được cung cấp.
 Nếu thông tin không đủ, hãy nói rõ là không tìm thấy trong tài liệu.
-Trả lời ngắn gọn, chính xác, bằng tiếng Việt.
+Trả lời ngắn gọn, chính xác, bằng tiếng Việt, không dùng tiếng Trung để trả lời.
 
 Ngữ cảnh:
 {context}

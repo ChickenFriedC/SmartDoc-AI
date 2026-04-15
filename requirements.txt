@@ -1,7 +1,7 @@
 streamlit==1.41.1
 langchain==0.3.16
 langchain-community==0.3.16
-faiss-cpu>=1.9.0
+faiss-cuda>=1.9.0
 sentence-transformers
 huggingface-hub
 ollama
@@ -11,3 +11,5 @@ numpy==1.26.4
 pandas
 torch
 python-docx
+rank-bm25
+langchain-text-splitters

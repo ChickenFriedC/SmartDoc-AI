@@ -4,7 +4,7 @@ from langchain_community.llms import Ollama
 from config import EMBEDDING_MODEL, MODEL_NAME
 
 @st.cache_resource(show_spinner=False)
-def get_embedder(device: str = "cpu"):
+def get_embedder(device: str = "cuda"):
     return HuggingFaceEmbeddings(
         model_name=EMBEDDING_MODEL,
         model_kwargs={"device": device},
