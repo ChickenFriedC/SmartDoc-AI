@@ -1,12 +1,12 @@
-PAGE_TITLE = "SmartDoc AI"
+PAGE_TITLE = "SmartDoc AI+"
 LAYOUT = "wide"
 
 MODEL_NAME = "qwen2.5:7b"
 EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
-RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+RERANK_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
-CACHE_DIR = "src/data/cache"
-MAX_FILE_SIZE_MB = 50
+CACHE_DIR = "data/cache"
+MAX_FILE_SIZE_MB = 200
 
 DEFAULT_CHUNK_SIZE = 1000
 DEFAULT_CHUNK_OVERLAP = 100
@@ -20,6 +20,6 @@ ENSEMBLE_VECTOR_WEIGHT = 0.6
 ENSEMBLE_BM25_WEIGHT = 0.4
 RERANK_TOP_N = 5
 
-DEFAULT_MULTI_HOP = False
 DEFAULT_QUERY_REWRITE = True
 DEFAULT_SELF_RAG = True
+DEFAULT_MULTI_HOP = False

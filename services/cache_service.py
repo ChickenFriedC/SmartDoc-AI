@@ -1,16 +1,17 @@
-import os
-import json
 import hashlib
+import json
+import os
+import shutil
 
 from config import CACHE_DIR
 
 
-def ensure_cache_dir():
+def ensure_cache_dir() -> None:
     os.makedirs(CACHE_DIR, exist_ok=True)
 
 
-def build_cache_key(file_hash: str, chunk_size: int, chunk_overlap: int, embedding_model: str) -> str:
-    raw_key = f"{file_hash}|{chunk_size}|{chunk_overlap}|{embedding_model}"
+def build_cache_key(file_hashes: list[str], chunk_size: int, chunk_overlap: int, embedding_model: str) -> str:
+    raw_key = f"{'|'.join(file_hashes)}|{chunk_size}|{chunk_overlap}|{embedding_model}"
     return hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
 
 
@@ -28,10 +29,9 @@ def cache_exists(cache_dir: str) -> bool:
     )
 
 
-def save_cache_metadata(cache_dir: str, metadata: dict):
+def save_cache_metadata(cache_dir: str, metadata: dict) -> None:
     os.makedirs(cache_dir, exist_ok=True)
-    meta_path = os.path.join(cache_dir, "meta.json")
-    with open(meta_path, "w", encoding="utf-8") as f:
+    with open(os.path.join(cache_dir, "meta.json"), "w", encoding="utf-8") as f:
         json.dump(metadata, f, ensure_ascii=False, indent=2)
 
 
@@ -39,10 +39,10 @@ def load_cache_metadata(cache_dir: str) -> dict | None:
     meta_path = os.path.join(cache_dir, "meta.json")
     if not os.path.exists(meta_path):
         return None
-
     with open(meta_path, "r", encoding="utf-8") as f:
         return json.load(f)
-    
+
+
 def clear_cache_dir() -> None:
     if os.path.exists(CACHE_DIR):
         shutil.rmtree(CACHE_DIR)

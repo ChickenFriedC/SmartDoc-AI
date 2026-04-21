@@ -1,137 +1,77 @@
 import streamlit as st
 
-from config import CHUNK_SIZE_OPTIONS, CHUNK_OVERLAP_OPTIONS
-from core.session import (
-    clear_history,
-    clear_vector_store,
-    clear_experiment_results,
-    reset_clear_flags,
+from config import (
+    CHUNK_OVERLAP_OPTIONS,
+    CHUNK_SIZE_OPTIONS,
+    DEFAULT_MULTI_HOP,
+    DEFAULT_QUERY_REWRITE,
+    DEFAULT_RETRIEVER_MODE,
+    DEFAULT_SELF_RAG,
 )
-from services.cache_service import clear_cache_dir
+from core.session import clear_history, clear_vector_store
+
 
 
 def render_sidebar():
-    with st.sidebar:
-        st.header("⚙️ Tùy chọn")
+    st.sidebar.title("⚙️ Cấu hình hệ thống")
+    st.sidebar.markdown("---")
+    st.sidebar.write("**Model:** Qwen2.5:7b")
+    st.sidebar.write("**Embeddings:** Multilingual MPNet")
+    st.sidebar.write("**Status:** Local Runtime (Ollama)")
 
-        st.subheader("🧩 Chunk Strategy")
+    st.sidebar.markdown("### Chunk strategy")
+    st.session_state.chunk_size = st.sidebar.selectbox(
+        "Chunk size",
+        CHUNK_SIZE_OPTIONS,
+        index=CHUNK_SIZE_OPTIONS.index(st.session_state.chunk_size) if st.session_state.chunk_size in CHUNK_SIZE_OPTIONS else 1,
+    )
+    st.session_state.chunk_overlap = st.sidebar.selectbox(
+        "Chunk overlap",
+        CHUNK_OVERLAP_OPTIONS,
+        index=CHUNK_OVERLAP_OPTIONS.index(st.session_state.chunk_overlap) if st.session_state.chunk_overlap in CHUNK_OVERLAP_OPTIONS else 1,
+    )
 
-        chunk_size = st.selectbox(
-            "Chunk Size",
-            CHUNK_SIZE_OPTIONS,
-            index=CHUNK_SIZE_OPTIONS.index(st.session_state.chunk_size)
-            if st.session_state.chunk_size in CHUNK_SIZE_OPTIONS else 1
-        )
+    st.sidebar.markdown("### Retrieval")
+    st.session_state.retriever_mode = st.sidebar.selectbox(
+        "Retriever mode",
+        ["vector", "hybrid"],
+        index=1 if st.session_state.retriever_mode == "hybrid" else 0,
+    )
 
-        chunk_overlap = st.selectbox(
-            "Chunk Overlap",
-            CHUNK_OVERLAP_OPTIONS,
-            index=CHUNK_OVERLAP_OPTIONS.index(st.session_state.chunk_overlap)
-            if st.session_state.chunk_overlap in CHUNK_OVERLAP_OPTIONS else 1
-        )
+    st.session_state.query_rewrite = st.sidebar.checkbox("Query rewrite", value=st.session_state.get("query_rewrite", DEFAULT_QUERY_REWRITE))
+    st.session_state.self_rag = st.sidebar.checkbox("Self-RAG validation", value=st.session_state.get("self_rag", DEFAULT_SELF_RAG))
+    st.session_state.multi_hop = st.sidebar.checkbox("Multi-hop reasoning", value=st.session_state.get("multi_hop", DEFAULT_MULTI_HOP))
 
-        st.session_state.chunk_size = chunk_size
-        st.session_state.chunk_overlap = chunk_overlap
-
-        st.caption(
-            f"Cấu hình hiện tại: chunk_size={st.session_state.chunk_size}, "
-            f"chunk_overlap={st.session_state.chunk_overlap}"
-        )
-
-        st.markdown("---")
-        st.subheader("🕘 Lịch sử hội thoại")
-
-        history = st.session_state.get("chat_history", [])
-
-        if not history:
-            st.info("Chưa có lịch sử hội thoại.")
-        else:
-            for i, item in enumerate(reversed(history), start=1):
-                real_index = len(history) - i
-                question = item.get("question", "")
-                answer = item.get("answer", "")
-
-                title = question[:40] + "..." if len(question) > 40 else question
-                with st.expander(f"Câu hỏi {len(history) - i + 1}: {title}"):
-                    st.markdown(f"**Câu hỏi:** {question}")
-                    st.markdown(f"**Trả lời:** {answer}")
-
-                    if st.button("Xem lại", key=f"history_btn_{real_index}"):
-                        st.session_state.selected_question = question
-                        st.session_state.question_input = question
-
-        st.markdown("---")
-        st.subheader("🗑 Quản lý dữ liệu")
-
-        if not st.session_state.confirm_clear_history:
-            if st.button("Clear History", use_container_width=True):
-                reset_clear_flags()
-                st.session_state.confirm_clear_history = True
-        else:
-            st.warning("Bạn có chắc muốn xóa toàn bộ lịch sử chat?")
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("Xác nhận", key="confirm_clear_history_btn", use_container_width=True):
-                    clear_history()
-                    st.success("Đã xóa toàn bộ lịch sử chat.")
-                    st.rerun()
-            with col2:
-                if st.button("Hủy", key="cancel_clear_history_btn", use_container_width=True):
-                    st.session_state.confirm_clear_history = False
-                    st.rerun()
-
-        if not st.session_state.confirm_clear_vector:
-            if st.button("Clear Vector Store", use_container_width=True):
-                reset_clear_flags()
-                st.session_state.confirm_clear_vector = True
-        else:
-            st.warning("Bạn có chắc muốn xóa tài liệu đã upload và vector store hiện tại?")
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("Xác nhận xóa vector", key="confirm_clear_vector_btn", use_container_width=True):
-                    clear_vector_store()
-                    st.success("Đã xóa vector store.")
-                    st.rerun()
-            with col2:
-                if st.button("Hủy", key="cancel_clear_vector_btn", use_container_width=True):
-                    st.session_state.confirm_clear_vector = False
-                    st.rerun()
-
-        if not st.session_state.confirm_clear_cache:
-            if st.button("Clear Cache", use_container_width=True):
-                reset_clear_flags()
-                st.session_state.confirm_clear_cache = True
-        else:
-            st.warning("Bạn có chắc muốn xóa toàn bộ cache?")
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("Xác nhận xóa cache", key="confirm_clear_cache_btn", use_container_width=True):
-                    clear_cache_dir()
-                    st.success("Đã xóa toàn bộ cache.")
-                    st.rerun()
-            with col2:
-                if st.button("Hủy", key="cancel_clear_cache_btn", use_container_width=True):
-                    st.session_state.confirm_clear_cache = False
-                    st.rerun()
-
-        st.markdown("---")
-        st.subheader("🧪 Kết quả thử nghiệm")
-
-        if st.session_state.experiment_results:
-            for i, result in enumerate(reversed(st.session_state.experiment_results), start=1):
-                with st.expander(
-                    f"Lần {len(st.session_state.experiment_results) - i + 1}: "
-                    f"size={result['chunk_size']}, overlap={result['chunk_overlap']}"
-                ):
-                    st.write(f"**Câu hỏi:** {result['question']}")
-                    st.write(f"**Số chunks:** {result['num_chunks']}")
-                    st.write(f"**Số đoạn retrieve:** {result['num_retrieved_docs']}")
-                    st.write(f"**Thời gian xử lý:** {result['processing_time']:.3f}s")
-                    st.write(f"**Thời gian trả lời:** {result['answer_time']:.3f}s")
-        else:
-            st.info("Chưa có kết quả thử nghiệm.")
-
-        if st.button("Clear Experiment Results", use_container_width=True):
-            clear_experiment_results()
-            st.success("Đã xóa kết quả thử nghiệm.")
+    st.sidebar.markdown("### Quản lý dữ liệu")
+    if st.sidebar.button("Clear History"):
+        st.session_state.confirm_clear_history = True
+    if st.session_state.confirm_clear_history:
+        st.sidebar.warning("Bạn có chắc muốn xóa toàn bộ lịch sử chat?")
+        c1, c2 = st.sidebar.columns(2)
+        if c1.button("Xác nhận xóa lịch sử", use_container_width=True):
+            clear_history()
             st.rerun()
+        if c2.button("Hủy xóa lịch sử", use_container_width=True):
+            st.session_state.confirm_clear_history = False
+            st.rerun()
+
+    if st.sidebar.button("Clear Vector Store", use_container_width=True):
+        st.session_state.confirm_clear_vector = True
+    if st.session_state.confirm_clear_vector:
+        st.sidebar.warning("Bạn có chắc muốn xóa toàn bộ tài liệu đã xử lý?")
+        c1, c2 = st.sidebar.columns(2)
+        if c1.button("Xác nhận xóa vector", use_container_width=True):
+            clear_vector_store()
+            st.rerun()
+        if c2.button("Hủy xóa vector", use_container_width=True):
+            st.session_state.confirm_clear_vector = False
+            st.rerun()
+
+    st.sidebar.markdown("### Lịch sử hội thoại")
+    if not st.session_state.chat_history:
+        st.sidebar.caption("Chưa có câu hỏi nào.")
+    else:
+        for idx, turn in enumerate(reversed(st.session_state.chat_history), start=1):
+            with st.sidebar.expander(f"#{idx} {turn['question'][:40]}"):
+                st.write("**Q:**", turn["question"])
+                st.write("**A:**", turn["answer"])
