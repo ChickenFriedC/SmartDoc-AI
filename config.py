@@ -1,0 +1,26 @@
+# Model configuration
+MODEL_NAME = "qwen2.5:7b"
+EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
+RERANK_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+
+# File limits
+MAX_FILE_SIZE_MB = 200
+
+# Chunking strategy
+DEFAULT_CHUNK_SIZE = 1000
+DEFAULT_CHUNK_OVERLAP = 100
+CHUNK_SIZE_OPTIONS = [500, 1000, 1500, 2000]
+CHUNK_OVERLAP_OPTIONS = [50, 100, 200]
+
+# Retrieval configuration
+RETRIEVER_K = 4
+RETRIEVER_FETCH_K = 20
+ENSEMBLE_VECTOR_WEIGHT = 0.6
+ENSEMBLE_BM25_WEIGHT = 0.4
+RERANK_TOP_N = 5
+
+# Feature defaults
+DEFAULT_MULTI_HOP = False
+DEFAULT_QUERY_REWRITE = True
+DEFAULT_RETRIEVER_MODE = "hybrid"
+DEFAULT_SELF_RAG = True

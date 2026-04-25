@@ -44,7 +44,6 @@ def render_sidebar():
     st.session_state.query_rewrite = st.sidebar.checkbox("Query rewrite", value=st.session_state.get("query_rewrite", DEFAULT_QUERY_REWRITE))
     st.session_state.self_rag = st.sidebar.checkbox("Self-RAG validation", value=st.session_state.get("self_rag", DEFAULT_SELF_RAG))
     st.session_state.multi_hop = st.sidebar.checkbox("Multi-hop reasoning", value=st.session_state.get("multi_hop", DEFAULT_MULTI_HOP))
-    st.session_state.use_graph_rag = st.sidebar.checkbox("Enable GraphRAG", value=st.session_state.get("use_graph_rag", False))
 
     st.sidebar.write("") # Spacer
     st.sidebar.markdown("### Data management")

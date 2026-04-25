@@ -2,16 +2,16 @@
 
 Hệ thống hỏi đáp tài liệu thông minh kết hợp Vector Search truyền thống và Đồ thị tri thức (GraphRAG).
 
-## 🚀 Tính năng nổi bật
+## Tính năng nổi bật
 - **Hybrid Retrieval**: Kết hợp FAISS (tìm kiếm tương đồng) và BM25 (tìm kiếm từ khóa).
-- **GraphRAG🌿**: Tự động trích xuất thực thể và quan hệ để giải quyết các câu hỏi yêu cầu suy luận kết nối thông tin.
+- **GraphRAG**: Tự động trích xuất thực thể và quan hệ để giải quyết các câu hỏi yêu cầu suy luận kết nối thông tin.
 - **Reranking**: Sử dụng Cross-Encoder để tinh lọc top kết quả chính xác nhất.
 - **Self-RAG**: Tự động thẩm định câu trả lời để tránh ảo giác (hallucination).
 - **Advanced UI**: Hỗ trợ phản hồi dạng Streaming và hiển thị nguồn dẫn chi tiết.
 
 ---
 
-## 🛠 Hướng dẫn thiết lập chi tiết
+## Hướng dẫn thiết lập chi tiết
 
 ### 1. Chuẩn bị môi trường
 - **Python**: Phiên bản 3.10 trở lên.
@@ -43,7 +43,7 @@ pip install -r requirements.txt
 ```bash
 streamlit run app.py
 ```
-## 📁 Cấu trúc thư mục
+## Cấu trúc thư mục
 ```text
 SmartDoc-AI/
 ├── app.py                  # Mã nguồn chính của ứng dụng Streamlit
@@ -53,7 +53,7 @@ SmartDoc-AI/
 ├── project_report_final.pdf # File báo cáo PDF hoàn chỉnh
 └── README.md               # Hướng dẫn sử dụng dự án
 ```
-## 💡 Cách hoạt động (Quy trình RAG)
+## Cách hoạt động (Quy trình RAG)
 1.  **Tải tài liệu:** Người dùng tải file PDF lên qua giao diện.
 2.  **Phân đoạn (Chunking):** Tài liệu được chia thành các đoạn nhỏ (1000 ký tự) để xử lý hiệu quả.
 3.  **Vector hóa (Embedding):** Mỗi đoạn văn được chuyển thành một vector số học bằng mô hình MPNet.
@@ -62,7 +62,7 @@ SmartDoc-AI/
 
 ---
 
-## 📁 Cấu trúc dự án
+## Cấu trúc dự án
 - `app.py`: Điểm khởi đầu của ứng dụng Streamlit.
 - `services/`: Chứa logic lõi (Loader, Vector Store, RAG, Graph).
 - `core/`: Chứa cấu hình Prompt và khởi tạo mô hình.
