@@ -105,6 +105,10 @@ def answer_question(retriever, question, chat_history=None, query_rewrite=True, 
     context = _format_context(processed_docs)
     prompt = build_prompt(context, question, _format_chat_history(history))
     
+    # Bổ sung ràng buộc cuối cùng để tránh nhảy sang tiếng Trung
+    if "á" in prompt or "đ" in prompt or "ơ" in prompt:
+        prompt += "\nLƯU Ý: TRẢ LỜI HOÀN TOÀN BẰNG TIẾNG VIỆT. KHÔNG DÙNG TIẾNG TRUNG."
+    
     return {
         "prompt": prompt, 
         "sources": _format_sources(processed_docs), 
