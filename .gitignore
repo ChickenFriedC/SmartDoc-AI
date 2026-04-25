@@ -30,9 +30,7 @@ htmlcov/
 .streamlit/config.toml
 .streamlit/secrets.toml
 
-# Data and Reports
-data/
-tests/data/
+# Reports and temporary logs
 performance_report.txt
 error.txt
 *.log
@@ -40,9 +38,9 @@ error.txt
 # Security
 .env
 
-# Large files
-*.pdf
-*.docx
-*.pptx
-# Un-ignore the specific final report if needed
-!project_report_final.pdf
+# TRACKING FILES (NOT IGNORED)
+# Allow tracking of data directory and document formats
+!data/
+!*.pdf
+!*.docx
+!*.pptx
