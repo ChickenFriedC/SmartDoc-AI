@@ -1,28 +1,34 @@
 import streamlit as st
+import torch
+
+# Tối ưu hóa hiệu suất CPU (Target: 5-10s cho 100 chunks)
+if not torch.cuda.is_available():
+    torch.set_num_threads(4)
+
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.llms import Ollama
 from config import EMBEDDING_MODEL, MODEL_NAME
 
-from functools import lru_cache
-
 @st.cache_resource(show_spinner=False)
-def get_embedder(device: str = "cpu"):
-    # Chuyển về CPU mặc định nếu không có GPU mạnh để ổn định luồng
+def get_embedder(device: str = None):
+    if device is None:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+    
     return HuggingFaceEmbeddings(
         model_name=EMBEDDING_MODEL,
-        model_kwargs={"device": device},
-        encode_kwargs={"normalize_embeddings": True},
+        model_kwargs={'device': device},
+        encode_kwargs={'normalize_embeddings': True, 'batch_size': 32}
     )
 
-@lru_cache(maxsize=1)
-def _get_ollama_instance(model_name: str):
-    # Dùng Singleton thực thụ qua lru_cache
-    return Ollama(
-        model=model_name,
-        temperature=0.1,
-        num_ctx=4096,
-        stop=["<|im_end|>", "<|endoftext|>", "User:", "Assistant:"],
-    )
-
+@st.cache_resource(show_spinner=False)
 def get_llm():
-    return _get_ollama_instance(MODEL_NAME)
+    return Ollama(
+        model=MODEL_NAME,
+        temperature=0.7,
+        top_p=0.9,
+        repeat_penalty=1.1,
+        # Tối ưu hóa cho tốc độ xử lý local
+        num_thread=8,
+        num_ctx=4096,
+        num_predict=512
+    )

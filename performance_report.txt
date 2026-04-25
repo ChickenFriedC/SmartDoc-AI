@@ -1,0 +1,27 @@
+==================================================
+SMARTDOC AI - ACTUAL PERFORMANCE REPORT
+Generated at: 2026-04-25 17:04:23
+==================================================
+
+[Configuration Used]
+- Chunk Size:           N/A
+- Chunk Overlap:        N/A
+- Retriever Mode:       N/A
+
+[Actual Processing Time - Latest Operation]
+- Document Loading:     5.68 seconds (Target: 2-5s)
+- Embedding Generation: 5.98 seconds (Target: 5-10s/100 chunks)
+- Query Processing:     0.06 seconds (Target: 1-3s)
+- Answer Generation:    6.8 seconds (Target: 3-8s)
+
+[Actual Accuracy Metrics - Calculated from 0 queries]
+- Relevant Retrieval:   N/A (No queries yet) (Target: 85-90%)
+- Answer Relevance:     N/A (Target: 80-85%)
+- Factual Accuracy:     N/A (Target: 75-80%)
+
+==================================================
+System Info:
+- Model: Qwen2.5:7b
+- Embeddings: Multilingual MPNet
+- Accuracy Calculation: Dynamic based on Self-RAG logs
+==================================================

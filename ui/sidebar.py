@@ -38,12 +38,26 @@ def render_sidebar():
     st.session_state.retriever_mode = st.sidebar.selectbox(
         "Retriever mode",
         ["Vector", "Hybrid"],
-        index=1 if st.session_state.retriever_mode.lower() == "hybrid" else 0,
+        index=0,
     ).lower()
 
-    st.session_state.query_rewrite = st.sidebar.checkbox("Query rewrite", value=st.session_state.get("query_rewrite", DEFAULT_QUERY_REWRITE))
-    st.session_state.self_rag = st.sidebar.checkbox("Self-RAG validation", value=st.session_state.get("self_rag", DEFAULT_SELF_RAG))
-    st.session_state.multi_hop = st.sidebar.checkbox("Multi-hop reasoning", value=st.session_state.get("multi_hop", DEFAULT_MULTI_HOP))
+    st.session_state.query_rewrite = st.sidebar.checkbox("Query rewrite", value=False)
+    st.session_state.rerank = st.sidebar.checkbox("Re-ranking (Cross-Encoder)", value=False)
+    st.session_state.self_rag = st.sidebar.checkbox("Self-RAG validation", value=False)
+    st.session_state.multi_hop = st.sidebar.checkbox("Multi-hop reasoning", value=False)
+
+    st.sidebar.write("") # Spacer
+    st.sidebar.markdown("### Document Filtering")
+    all_files = st.session_state.get("uploaded_file_names", [])
+    if all_files:
+        st.session_state.selected_files = st.sidebar.multiselect(
+            "Select documents to search",
+            options=all_files,
+            default=all_files,
+            help="Filter search results to specific documents."
+        )
+    else:
+        st.sidebar.caption("No documents uploaded yet.")
 
     st.sidebar.write("") # Spacer
     st.sidebar.markdown("### Data management")
@@ -73,11 +87,11 @@ def render_sidebar():
             st.rerun()
 
     st.sidebar.write("") # Spacer
-    st.sidebar.markdown("### Chat history")
+    st.sidebar.markdown("### Chat History")
     if not st.session_state.chat_history:
-        st.sidebar.caption("No questions yet.")
+        st.sidebar.caption("No questions asked yet.")
     else:
         for idx, turn in enumerate(reversed(st.session_state.chat_history), start=1):
-            with st.sidebar.expander(f"#{idx} {turn['question'][:40]}"):
-                st.write("Q:", turn["question"])
-                st.write("A:", turn["answer"])
+            with st.sidebar.expander(f"Q{len(st.session_state.chat_history)-idx+1}: {turn['question'][:30]}..."):
+                st.write(f"**Question:** {turn['question']}")
+                st.write(f"**Answer:** {turn['answer'][:100]}...")

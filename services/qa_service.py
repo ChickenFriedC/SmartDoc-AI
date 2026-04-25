@@ -1,4 +1,5 @@
 import json
+import time
 from core.models import get_llm
 from core.prompts import (
     build_prompt,
@@ -26,7 +27,19 @@ def _format_sources(docs):
     sources = []
     for doc in docs:
         meta = doc.metadata
-        sources.append({"label": build_source_label(meta), "filename": meta.get("filename"), "content": doc.page_content})
+        label = build_source_label(meta)
+        if "page" in meta:
+            label += f" (Trang {meta['page']})"
+        elif "paragraph_index" in meta:
+            label += f" (Đoạn {meta['paragraph_index']})"
+            
+        sources.append({
+            "label": label, 
+            "filename": meta.get("filename"), 
+            "content": doc.page_content,
+            "page": meta.get("page"),
+            "paragraph": meta.get("paragraph_index")
+        })
     return sources
 
 def rewrite_query_if_needed(question: str, chat_history: list[dict], enabled: bool) -> str:
@@ -42,33 +55,49 @@ def validate_answer_if_needed(answer: str, docs, enabled: bool):
     try: return json.loads(llm.invoke(prompt))
     except: return {"supported": True}
 
-def answer_question(retriever, question, chat_history=None, query_rewrite=True, self_rag=True, multi_hop=False, knowledge_graph=None):
+def answer_question(retriever, question, chat_history=None, query_rewrite=True, self_rag=True, multi_hop=False, selected_files=None, rerank=True):
     history = chat_history or []
     
-    # 1. Query Rewrite (Co the dung model nho hon neu muon nhanh)
+    rewrite_t0 = time.time()
     effective_query = rewrite_query_if_needed(question, history, query_rewrite)
+    rewrite_time = round(time.time() - rewrite_t0, 2)
     
-    # 2. Retrieval
+    retrieval_t0 = time.time()
     retrieved_docs = retriever.invoke(effective_query)
     
-    # 3. Reranking (Gioi han so luong de nhanh hon)
-    reranked_docs = rerank_documents(question, retrieved_docs[:10]) 
-    
-    graph_context = ""
-    if knowledge_graph is not None:
-        from services.graph_service import get_relevant_entities
-        entities = effective_query.split()
-        relevant_nodes = get_relevant_entities(knowledge_graph, entities)
-        if relevant_nodes: graph_context = "\nGraphRAG: " + ", ".join(relevant_nodes)
+    if multi_hop:
+        temp_context = _format_context(retrieved_docs[:3])
+        from core.prompts import build_multi_hop_prompt
+        mh_prompt = build_multi_hop_prompt(question, temp_context)
+        llm = get_llm()
+        sub_query = llm.invoke(mh_prompt).strip()
+        
+        if sub_query and "NONE" not in sub_query.upper():
+            extra_docs = retriever.invoke(sub_query)
+            retrieved_docs.extend(extra_docs)
+            unique_docs = []
+            seen_content = set()
+            for d in retrieved_docs:
+                if d.page_content not in seen_content:
+                    unique_docs.append(d)
+                    seen_content.add(d.page_content)
+            retrieved_docs = unique_docs
 
-    context = _format_context(reranked_docs)
-    if graph_context: context = graph_context + "\n\n" + context
+    if rerank:
+        processed_docs = rerank_documents(question, retrieved_docs, selected_files=selected_files)
+    else:
+        from services.retrieval_service import filter_docs_by_metadata
+        processed_docs = filter_docs_by_metadata(retrieved_docs, selected_files)[:5]
+        
+    pure_query_time = round(time.time() - retrieval_t0, 2)
     
+    context = _format_context(processed_docs)
     prompt = build_prompt(context, question, _format_chat_history(history))
     
-    # 4. Trả về kết quả kèm theo LLM object để stream ở app.py
     return {
         "prompt": prompt, 
-        "sources": _format_sources(reranked_docs), 
-        "docs": reranked_docs
+        "sources": _format_sources(processed_docs), 
+        "docs": processed_docs,
+        "pure_query_time": pure_query_time,
+        "rewrite_time": rewrite_time
     }

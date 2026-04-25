@@ -2,27 +2,52 @@ import os
 import threading
 from datetime import datetime
 
-def _run_export(file_path: str):
-    """Internal function for background export."""
+def _run_export(file_path: str, metrics: dict, history_metrics: list = None):
+    """Internal function to calculate and write actual percentages to a file."""
+    if history_metrics is None:
+        history_metrics = []
+        
+    # Tính toán các chỉ số trung bình thực tế
+    total_queries = len(history_metrics)
+    if total_queries > 0:
+        supported_count = sum(1 for m in history_metrics if m.get('supported') is True or m.get('supported') == 'True')
+        avg_confidence = sum(float(m.get('confidence', 0) or 0) for m in history_metrics) / total_queries
+        high_accuracy_count = sum(1 for m in history_metrics if float(m.get('confidence', 0) or 0) > 0.8)
+        
+        actual_retrieval = f"{round((supported_count / total_queries) * 100, 1)}%"
+        actual_relevance = f"{round(avg_confidence * 100, 1)}%"
+        actual_accuracy = f"{round((high_accuracy_count / total_queries) * 100, 1)}%"
+    else:
+        actual_retrieval = "N/A (No queries yet)"
+        actual_relevance = "N/A"
+        actual_accuracy = "N/A"
+
     report_content = f"""==================================================
-SMARTDOC AI - PERFORMANCE & ACCURACY REPORT
+SMARTDOC AI - ACTUAL PERFORMANCE REPORT
 Generated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 ==================================================
 
-[Processing Time]
-- PDF Loading:          2-5 seconds (size dependent)
-- Embedding Generation: 5-10 seconds per 100 chunks
-- Query Processing:     1-3 seconds
-- Answer Generation:    3-8 seconds
+[Configuration Used]
+- Chunk Size:           {metrics.get('chunk_size', 'N/A')}
+- Chunk Overlap:        {metrics.get('chunk_overlap', 'N/A')}
+- Retriever Mode:       {metrics.get('retriever_mode', 'N/A')}
 
-[Accuracy Metrics]
-- Relevant Retrieval:   85-90%
-- Answer Relevance:     80-85%
-- Factual Accuracy:     75-80%
+[Actual Processing Time - Latest Operation]
+- Document Loading:     {metrics.get('load_time', 'N/A')} seconds (Target: 2-5s)
+- Embedding Generation: {metrics.get('embed_time', 'N/A')} seconds (Target: 5-10s/100 chunks)
+- Query Processing:     {metrics.get('query_time', 'N/A')} seconds (Target: 1-3s)
+- Answer Generation:    {metrics.get('gen_time', 'N/A')} seconds (Target: 3-8s)
+
+[Actual Accuracy Metrics - Calculated from {total_queries} queries]
+- Relevant Retrieval:   {actual_retrieval} (Target: 85-90%)
+- Answer Relevance:     {actual_relevance} (Target: 80-85%)
+- Factual Accuracy:     {actual_accuracy} (Target: 75-80%)
 
 ==================================================
-Note: Metrics are based on local runtime tests with 
-Qwen2.5:7b and Multilingual MPNet embeddings.
+System Info:
+- Model: Qwen2.5:7b
+- Embeddings: Multilingual MPNet
+- Accuracy Calculation: Dynamic based on Self-RAG logs
 ==================================================
 """
     try:
@@ -31,9 +56,9 @@ Qwen2.5:7b and Multilingual MPNet embeddings.
     except:
         pass
 
-def export_performance_report_async(file_path: str = "performance_report.txt"):
+def export_performance_report_async(metrics: dict, history_metrics: list = None, file_path: str = "performance_report.txt"):
     """
-    Triggers the performance report export in a background thread.
+    Triggers the report export in a background thread with real-time dynamic calculation.
     """
-    thread = threading.Thread(target=_run_export, args=(file_path,), daemon=True)
+    thread = threading.Thread(target=_run_export, args=(file_path, metrics, history_metrics), daemon=True)
     thread.start()

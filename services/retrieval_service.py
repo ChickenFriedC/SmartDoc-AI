@@ -1,3 +1,4 @@
+import torch
 from typing import List
 
 try:
@@ -26,7 +27,8 @@ _cross_encoder = None
 def get_cross_encoder() -> CrossEncoder:
     global _cross_encoder
     if _cross_encoder is None:
-        _cross_encoder = CrossEncoder(RERANK_MODEL)
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        _cross_encoder = CrossEncoder(RERANK_MODEL, device=device)
     return _cross_encoder
 
 
@@ -50,19 +52,22 @@ def build_hybrid_retriever(vector_store, documents):
 
 
 
-def filter_docs_by_source(docs: List, selected_source: str):
-    if selected_source == "Tất cả":
+def filter_docs_by_metadata(docs: List, selected_files: List[str]):
+    if not selected_files:
         return docs
-    return [doc for doc in docs if doc.metadata.get("filename") == selected_source]
+    return [doc for doc in docs if doc.metadata.get("filename") in selected_files]
 
-
-
-def rerank_documents(question: str, docs: List, top_n: int = RERANK_TOP_N):
+def rerank_documents(question: str, docs: List, top_n: int = RERANK_TOP_N, selected_files: List[str] = None):
     if not docs:
+        return []
+    
+    # Lọc tài liệu theo metadata trước khi rerank
+    filtered_docs = filter_docs_by_metadata(docs, selected_files)
+    if not filtered_docs:
         return []
 
     cross_encoder = get_cross_encoder()
-    pairs = [(question, doc.page_content) for doc in docs]
+    pairs = [(question, doc.page_content) for doc in filtered_docs]
     scores = cross_encoder.predict(pairs)
 
     scored_docs = []

@@ -20,25 +20,21 @@ def render_answer(response: str, validation: dict | None = None):
 
 
 def render_sources(sources: list[dict]):
-    with st.expander("Xem nguồn tài liệu được sử dụng"):
-        if not sources:
-            st.info("Không có nguồn nào để hiển thị.")
-            return
+    st.markdown("### Nguồn trích dẫn & Minh chứng")
+    if not sources:
+        st.info("Không có nguồn nào để hiển thị.")
+        return
 
-        for i, source in enumerate(sources, start=1):
-            st.markdown(f"**Nguồn {i}: {source['label']}**")
-            st.caption(
-                f"chunk={source.get('chunk_id')} | start={source.get('start_index')} | end={source.get('end_index')} | rerank={source.get('rerank_score')}"
-            )
-            st.info(source["content"])
-
-
-def render_graph_rag():
-    st.subheader("GraphRAG Integration")
-    st.write("Tính năng GraphRAG cho phép truy vấn dựa trên đồ thị tri thức từ tài liệu.")
-    st.info("Hiện tại tính năng này đang trong quá trình tích hợp. Vui lòng quay lại sau.")
-    
-    # Placeholder for GraphRAG UI
-    st.text_input("Đặt câu hỏi (GraphRAG Mode)", key="graph_rag_question")
-    if st.button("Truy vấn Graph"):
-        st.warning("Công cụ GraphRAG chưa được cấu hình hoàn thiện.")
+    for i, source in enumerate(sources, start=1):
+        with st.expander(f"Nguồn {i}: {source['label']}"):
+            st.markdown(f"**Nội dung trích xuất:**")
+            st.markdown(f"> {source['content']}")
+            
+            cols = st.columns(2)
+            with cols[0]:
+                st.caption(f"File: {source['filename']}")
+            with cols[1]:
+                if source.get('page'):
+                    st.caption(f"Trang: {source['page']}")
+                elif source.get('paragraph'):
+                    st.caption(f"Đoạn: {source['paragraph']}")

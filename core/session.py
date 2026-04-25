@@ -5,7 +5,6 @@ def init_session_state() -> None:
     defaults = {
         "vector_store": None,
         "retriever": None,
-        "knowledge_graph": None,
         "processed_docs": [],
         "raw_docs": [],
         "chat_history": [],
@@ -21,7 +20,7 @@ def init_session_state() -> None:
         "query_rewrite": True,
         "self_rag": True,
         "multi_hop": False,
-        "use_graph_rag": False,
+        "quality_metrics": [],
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -46,7 +45,6 @@ def clear_history() -> None:
 def clear_vector_store() -> None:
     st.session_state.vector_store = None
     st.session_state.retriever = None
-    st.session_state.knowledge_graph = None
     st.session_state.processed_docs = []
     st.session_state.raw_docs = []
     st.session_state.uploaded_files_meta = []
