@@ -112,15 +112,53 @@ if st.session_state.processed_docs:
             full_answer = ""
             
             from core.models import get_llm
+            from core.models import get_llm_safe, is_ollama_runner_terminated_error, ollama_diagnose
             llm = get_llm()
+
+            # Best-effort preflight so failures are actionable.
+            diag = ollama_diagnose()
+            if not diag.get("ok"):
+                st.warning(
+                    "Không thể kết nối Ollama. Hãy đảm bảo Ollama đang chạy (" 
+                    + str(diag.get("base_url", "http://localhost:11434"))
+                    + ")."
+                )
             
             gen_t0 = time.time()
             chunk_count = 0
-            for chunk in llm.stream(result_data["prompt"]):
-                full_answer += chunk
-                chunk_count += 1
-                if chunk_count % 5 == 0:
-                    answer_placeholder.markdown(full_answer)
+            try:
+                for chunk in llm.stream(result_data["prompt"]):
+                    full_answer += chunk
+                    chunk_count += 1
+                    if chunk_count % 5 == 0:
+                        answer_placeholder.markdown(full_answer)
+            except ValueError as e:
+                # Common Ollama failure on Windows or low-memory machines.
+                if is_ollama_runner_terminated_error(e):
+                    st.warning(
+                        "Ollama bị dừng (HTTP 500: llama runner process has terminated). "
+                        "Đang thử lại với cấu hình nhẹ hơn..."
+                    )
+                    try:
+                        llm_safe = get_llm_safe()
+                        full_answer = llm_safe.invoke(result_data["prompt"]).strip()
+                    except Exception as e2:
+                        st.error(
+                            "Ollama vẫn lỗi sau khi thử lại. "
+                            "Gợi ý: chạy `ollama list` để kiểm tra model, "
+                            "`ollama pull qwen2.5:7b` nếu thiếu, hoặc khởi động lại Ollama."
+                        )
+                        st.caption(f"Ollama base URL: {diag.get('base_url', 'http://localhost:11434')}")
+                        st.code(str(e2))
+                        st.stop()
+                else:
+                    st.error("Lỗi khi gọi Ollama.")
+                    st.code(str(e))
+                    st.stop()
+            except Exception as e:
+                st.error("Lỗi không xác định khi generate.")
+                st.code(str(e))
+                st.stop()
             answer_placeholder.markdown(full_answer)
             gen_t1 = time.time()
 
