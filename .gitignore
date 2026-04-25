@@ -1,56 +1,59 @@
-# Python environment
+# Python virtual environments
+### Python virtual environments
 venv/
 .venv/
 env/
-bin/
-lib/
-include/
+ENV/
 
-# IDE
+### Python bytecode / caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pytype/
+.ipynb_checkpoints/
+
+### Build / test artifacts
+build/
+dist/
+*.egg-info/
+.tox/
+.coverage
+htmlcov/
+
+### IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# OS
+### OS
 .DS_Store
 Thumbs.db
 
-# Project specifics
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.pytest_cache/
-.tox/
-.coverage
-htmlcov/
-
-# Streamlit
-.streamlit/config.toml
+### Streamlit (never commit secrets)
 .streamlit/secrets.toml
 
-# Reports and temporary logs
-performance_report.txt
-error.txt
+### Logs / reports
 *.log
+error.txt
+performance_report.txt
 
-# Security
+### Secrets
 .env
 
-# TRACKING FILES (NOT IGNORED)
-# Allow tracking of data directory and document formats
+### Generated caches / vector stores (can be huge)
+src/data/cache/
+*.pkl
+*.faiss
+*.index
+*.bin
+
+### Data & docs
+# Keep common document formats versioned by default.
 !data/
 !*.pdf
 !*.docx
 !*.pptx
-
-src/data/cache/
-*.faiss
-*.pkl
-performance_report.txt
-
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
