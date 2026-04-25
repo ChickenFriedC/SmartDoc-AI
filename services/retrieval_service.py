@@ -61,7 +61,6 @@ def rerank_documents(question: str, docs: List, top_n: int = RERANK_TOP_N, selec
     if not docs:
         return []
     
-    # Lọc tài liệu theo metadata trước khi rerank
     filtered_docs = filter_docs_by_metadata(docs, selected_files)
     if not filtered_docs:
         return []

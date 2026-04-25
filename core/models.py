@@ -1,7 +1,6 @@
 import streamlit as st
 import torch
 
-# Tối ưu hóa hiệu suất CPU (Target: 5-10s cho 100 chunks)
 if not torch.cuda.is_available():
     torch.set_num_threads(4)
 
@@ -27,7 +26,6 @@ def get_llm():
         temperature=0.7,
         top_p=0.9,
         repeat_penalty=1.1,
-        # Tối ưu hóa cho tốc độ xử lý local
         num_thread=8,
         num_ctx=4096,
         num_predict=512

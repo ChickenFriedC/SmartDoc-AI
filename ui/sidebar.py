@@ -19,8 +19,6 @@ def render_sidebar():
     st.sidebar.write("Embeddings: Multilingual MPNet")
     st.sidebar.write("Status: Local Runtime (Ollama)")
     
-    st.sidebar.write("") # Spacer
-
     st.sidebar.markdown("### Chunking strategy")
     st.session_state.chunk_size = st.sidebar.selectbox(
         "Chunk size",
@@ -33,7 +31,6 @@ def render_sidebar():
         index=CHUNK_OVERLAP_OPTIONS.index(st.session_state.chunk_overlap) if st.session_state.chunk_overlap in CHUNK_OVERLAP_OPTIONS else 1,
     )
 
-    st.sidebar.write("") # Spacer
     st.sidebar.markdown("### Retrieval configuration")
     st.session_state.retriever_mode = st.sidebar.selectbox(
         "Retriever mode",
@@ -46,7 +43,6 @@ def render_sidebar():
     st.session_state.self_rag = st.sidebar.checkbox("Self-RAG validation", value=False)
     st.session_state.multi_hop = st.sidebar.checkbox("Multi-hop reasoning", value=False)
 
-    st.sidebar.write("") # Spacer
     st.sidebar.markdown("### Document Filtering")
     all_files = st.session_state.get("uploaded_file_names", [])
     if all_files:
@@ -59,7 +55,6 @@ def render_sidebar():
     else:
         st.sidebar.caption("No documents uploaded yet.")
 
-    st.sidebar.write("") # Spacer
     st.sidebar.markdown("### Data management")
     if st.sidebar.button("Clear History", use_container_width=True):
         st.session_state.confirm_clear_history = True
@@ -73,7 +68,6 @@ def render_sidebar():
             st.session_state.confirm_clear_history = False
             st.rerun()
 
-    st.sidebar.write("")
     if st.sidebar.button("Clear Vector Store", use_container_width=True):
         st.session_state.confirm_clear_vector = True
     if st.session_state.confirm_clear_vector:
@@ -86,7 +80,6 @@ def render_sidebar():
             st.session_state.confirm_clear_vector = False
             st.rerun()
 
-    st.sidebar.write("") # Spacer
     st.sidebar.markdown("### Chat History")
     if not st.session_state.chat_history:
         st.sidebar.caption("No questions asked yet.")

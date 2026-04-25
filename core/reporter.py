@@ -3,11 +3,9 @@ import threading
 from datetime import datetime
 
 def _run_export(file_path: str, metrics: dict, history_metrics: list = None):
-    """Internal function to calculate and write actual percentages to a file."""
     if history_metrics is None:
         history_metrics = []
         
-    # Tính toán các chỉ số trung bình thực tế
     total_queries = len(history_metrics)
     if total_queries > 0:
         supported_count = sum(1 for m in history_metrics if m.get('supported') is True or m.get('supported') == 'True')

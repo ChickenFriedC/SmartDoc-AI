@@ -2,10 +2,15 @@
 venv/
 .venv/
 env/
+bin/
+lib/
+include/
 
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
 
 # OS
 .DS_Store
@@ -14,4 +19,30 @@ Thumbs.db
 # Project specifics
 __pycache__/
 *.pyc
-temp.pdf
+*.pyo
+*.pyd
+.pytest_cache/
+.tox/
+.coverage
+htmlcov/
+
+# Streamlit
+.streamlit/config.toml
+.streamlit/secrets.toml
+
+# Data and Reports
+data/
+tests/data/
+performance_report.txt
+error.txt
+*.log
+
+# Security
+.env
+
+# Large files
+*.pdf
+*.docx
+*.pptx
+# Un-ignore the specific final report if needed
+!project_report_final.pdf

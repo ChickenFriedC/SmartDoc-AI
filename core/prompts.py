@@ -1,26 +1,28 @@
 def build_prompt(context: str, question: str, history: str = "") -> str:
-    vietnamese_chars = 'aaaaeeeiooouuuuyyyyd'
-    is_vietnamese = any(char in question.lower() for char in vietnamese_chars)
+    vn_chars = "áàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ"
+    is_vietnamese = any(char in question.lower() for char in vn_chars)
     
     if is_vietnamese:
-        return f"""Su dung ngu canh sau day de tra loi cau hoi.
-Neu ban khong biet, chi can noi la ban khong biet.
-Tra loi ngan gon (3-4 cau) BAT BUOC bang tieng Viet.
+        return f"""Bạn là một trợ lý ảo chuyên nghiệp. Sử dụng duy nhất TIẾNG VIỆT để trả lời.
+Nhiệm vụ: Dựa vào ngữ cảnh dưới đây để trả lời câu hỏi một cách chính xác.
+Yêu cầu:
+- Nếu thông tin không có trong ngữ cảnh, hãy trả lời 'Tôi không biết'.
+- Trả lời ngắn gọn, súc tích (3-4 câu).
+- Tuyệt đối không sử dụng ngôn ngữ khác ngoài Tiếng Việt.
 
-Ngu canh: {context}
-
-Cau hoi: {question}
-
-Tra loi: """
+Ngữ cảnh: {context}
+Câu hỏi: {question}
+Trả lời: """
     else:
-        return f"""Use the following context to answer the question.
-If you don't know the answer, just say you don't know.
-Keep answer concise (3-4 sentences).
+        return f"""You are a professional AI assistant. Use ONLY ENGLISH to answer.
+Task: Answer the question based on the provided context.
+Requirements:
+- If the answer is not in the context, say 'I don't know'.
+- Keep it concise (3-4 sentences).
+- Do not use any language other than English.
 
 Context: {context}
-
 Question: {question}
-
 Answer:"""
 
 def build_query_rewrite_prompt(question: str, history: str) -> str:

@@ -49,11 +49,22 @@ def rewrite_query_if_needed(question: str, chat_history: list[dict], enabled: bo
     return llm.invoke(prompt).strip() or question
 
 def validate_answer_if_needed(answer: str, docs, enabled: bool):
-    if not enabled: return {"supported": True, "confidence": None, "reason": "disabled"}
+    if not enabled: return {"supported": True, "confidence": 1.0, "reason": "disabled"}
     llm = get_llm()
     prompt = build_self_rag_prompt(answer, _format_context(docs))
-    try: return json.loads(llm.invoke(prompt))
-    except: return {"supported": True}
+    try:
+        import json_repair
+        raw_res = llm.invoke(prompt)
+        # Sửa lỗi JSON và parse
+        data = json_repair.loads(raw_res)
+        if isinstance(data, dict):
+            return {
+                "supported": data.get("supported", True),
+                "confidence": data.get("confidence", 0.0)
+            }
+    except:
+        pass
+    return {"supported": True, "confidence": 0.5}
 
 def answer_question(retriever, question, chat_history=None, query_rewrite=True, self_rag=True, multi_hop=False, selected_files=None, rerank=True):
     history = chat_history or []

@@ -3,7 +3,6 @@ import warnings
 import os
 import time
 
-# Ẩn các cảnh báo
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", message=".*Accessing `__path__`.*")
 warnings.filterwarnings("ignore", message=".*torch.classes.*")
@@ -86,19 +85,16 @@ if uploaded_files:
             st.error(f"Lỗi: {e}")
             st.stop()
 
-# Hiển thị sidebar sau khi đã cập nhật session_state
 render_sidebar()
 
 if st.session_state.processed_docs:
     st.markdown("---")
     st.subheader("Ask a Question")
     user_question = st.text_input("Nhập câu hỏi vào đây và nhấn Enter", key="query_input")
-    
     if user_question:
         st.subheader("Response")
-        # Sử dụng container để hiển thị câu trả lời và spinner
         with st.container():
-            with st.status("Processing your query...", expanded=True) as status:
+            with st.spinner("Processing your query..."):
                 result_data = answer_question(
                     st.session_state.retriever, 
                     user_question, 
@@ -109,8 +105,7 @@ if st.session_state.processed_docs:
                     selected_files=st.session_state.get("selected_files"),
                     rerank=st.session_state.get("rerank", True)
                 )
-                status.update(label="Complete!", state="complete", expanded=False)            
-            
+
             answer_placeholder = st.empty()
             full_answer = ""
             
@@ -136,6 +131,12 @@ if st.session_state.processed_docs:
                     validation = validate_answer_if_needed(full_answer, result_data["docs"], True)
                     supported = validation.get("supported", "N/A")
                     confidence = validation.get("confidence", "N/A")
+                    
+                    st.session_state.quality_metrics.append({
+                        "supported": supported,
+                        "confidence": confidence
+                    })
+                    
                     validation_time = round(time.time() - val_t0, 2)
                 st.caption(f"Self-RAG | Supported: {supported} | Confidence: {confidence}")
 
