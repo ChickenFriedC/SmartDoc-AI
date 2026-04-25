@@ -14,12 +14,15 @@ from sentence_transformers import CrossEncoder
 
 from config import (
     ENSEMBLE_BM25_WEIGHT,
+    ENSEMBLE_GRAPH_WEIGHT,
     ENSEMBLE_VECTOR_WEIGHT,
     RERANK_TOP_N,
     RETRIEVER_FETCH_K,
     RETRIEVER_K,
     RERANK_MODEL,
 )
+
+from services.graph_rag import build_graph_retriever
 
 _cross_encoder = None
 
@@ -51,6 +54,19 @@ def build_hybrid_retriever(vector_store, documents):
     )
 
 
+def build_graph_hybrid_retriever(vector_store, documents):
+    vector_retriever, bm25_retriever = build_base_retrievers(vector_store, documents)
+    graph_retriever = build_graph_retriever(documents)
+    return EnsembleRetriever(
+        retrievers=[vector_retriever, bm25_retriever, graph_retriever],
+        weights=[
+            ENSEMBLE_VECTOR_WEIGHT,
+            ENSEMBLE_BM25_WEIGHT,
+            ENSEMBLE_GRAPH_WEIGHT,
+        ],
+    )
+
+
 
 def filter_docs_by_metadata(docs: List, selected_files: List[str]):
     if not selected_files:
@@ -70,7 +86,7 @@ def rerank_documents(question: str, docs: List, top_n: int = RERANK_TOP_N, selec
     scores = cross_encoder.predict(pairs)
 
     scored_docs = []
-    for doc, score in zip(docs, scores):
+    for doc, score in zip(filtered_docs, scores):
         doc.metadata["rerank_score"] = float(score)
         scored_docs.append(doc)
 

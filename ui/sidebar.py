@@ -34,9 +34,13 @@ def render_sidebar():
     st.sidebar.markdown("### Retrieval configuration")
     st.session_state.retriever_mode = st.sidebar.selectbox(
         "Retriever mode",
-        ["Vector", "Hybrid"],
+        ["Vector", "Hybrid", "Graph Hybrid"],
         index=0,
     ).lower()
+
+    # Normalize selectbox labels to internal mode keys
+    if st.session_state.retriever_mode == "graph hybrid":
+        st.session_state.retriever_mode = "graph_hybrid"
 
     st.session_state.query_rewrite = st.sidebar.checkbox("Query rewrite", value=False)
     st.session_state.rerank = st.sidebar.checkbox("Re-ranking (Cross-Encoder)", value=False)

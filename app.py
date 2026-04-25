@@ -18,7 +18,7 @@ from ui.sidebar import render_sidebar
 from services.document_loader import process_uploaded_files
 from services.vector_store import build_vector_store
 from services.qa_service import answer_question
-from services.retrieval_service import build_hybrid_retriever, build_base_retrievers
+from services.retrieval_service import build_graph_hybrid_retriever, build_hybrid_retriever, build_base_retrievers
 from core.reporter import export_performance_report_async
 
 st.set_page_config(page_title="SmartDoc AI", layout="wide")
@@ -54,9 +54,11 @@ if uploaded_files:
                 vector_store = build_vector_store(split_docs, device=None)
             t2 = time.time()
 
-            if st.session_state.retriever_mode == "hybrid": 
+            if st.session_state.retriever_mode == "hybrid":
                 retriever = build_hybrid_retriever(vector_store, split_docs)
-            else: 
+            elif st.session_state.retriever_mode == "graph_hybrid":
+                retriever = build_graph_hybrid_retriever(vector_store, split_docs)
+            else:
                 retriever, _ = build_base_retrievers(vector_store, split_docs)
 
             load_time = round(t1 - t0, 2)
