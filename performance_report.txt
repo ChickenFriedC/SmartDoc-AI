@@ -1,6 +1,6 @@
 ==================================================
 SMARTDOC AI - ACTUAL PERFORMANCE REPORT
-Generated at: 2026-04-25 17:35:04
+Generated at: 2026-04-25 17:50:40
 ==================================================
 
 [Configuration Used]
@@ -9,15 +9,15 @@ Generated at: 2026-04-25 17:35:04
 - Retriever Mode:       N/A
 
 [Actual Processing Time - Latest Operation]
-- Document Loading:     0.29 seconds (Target: 2-5s)
-- Embedding Generation: 0.55 seconds (Target: 5-10s/100 chunks)
-- Query Processing:     0.04 seconds (Target: 1-3s)
-- Answer Generation:    67.62 seconds (Target: 3-8s)
+- Document Loading:     0.62 seconds (Target: 2-5s)
+- Embedding Generation: 1.64 seconds (Target: 5-10s/100 chunks)
+- Query Processing:     61.28 seconds (Target: 1-3s)
+- Answer Generation:    66.85 seconds (Target: 3-8s)
 
-[Actual Accuracy Metrics - Calculated from 0 queries]
-- Relevant Retrieval:   N/A (No queries yet) (Target: 85-90%)
-- Answer Relevance:     N/A (Target: 80-85%)
-- Factual Accuracy:     N/A (Target: 75-80%)
+[Actual Accuracy Metrics - Calculated from 1 queries]
+- Relevant Retrieval:   100.0% (Target: 85-90%)
+- Answer Relevance:     100.0% (Target: 80-85%)
+- Factual Accuracy:     100.0% (Target: 75-80%)
 
 ==================================================
 System Info:
