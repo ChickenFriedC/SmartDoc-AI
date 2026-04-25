@@ -1,43 +1,45 @@
-# SmartDoc AI - Intelligent Document Q&A System
-Hệ thống hỏi đáp tài liệu thông minh (RAG - Retrieval-Augmented Generation) giúp người dùng tương tác và trích xuất thông tin từ tài liệu PDF một cách nhanh chóng và chính xác.
-## 🛠 Công nghệ sử dụng
-- **Frontend:** [Streamlit](https://streamlit.io/)
-- **RAG Framework:** [LangChain](https://www.langchain.com/)
-- **Vector Database:** [FAISS](https://github.com/facebookresearch/faiss) (Facebook AI Similarity Search)
-- **Embeddings:** `paraphrase-multilingual-mpnet-base-v2` (Sentence-Transformers)
-- **LLM Engine:** [Ollama](https://ollama.com/) (Model: `qwen2.5:7b`)
-- **Document Loader:** [PDFPlumber](https://github.com/jsvine/pdfplumber)
-## Yêu cầu hệ thống
-1.  **Python 3.10+**
-2.  **Ollama runtime** 
-3.  **pip package manager** 
-## ⚙️ Cài đặt và Chạy ứng dụng
+# SmartDoc AI+ (Intelligent RAG & GraphRAG System)
 
-### 1. Clone repository (hoặc tải mã nguồn)
-```bash
-git clone <https://github.com/ChickenFriedC/SmartDoc-AI.git>
-cd SmartDoc-AI
-```
+Hệ thống hỏi đáp tài liệu thông minh kết hợp Vector Search truyền thống và Đồ thị tri thức (GraphRAG).
 
-### 2. Thiết lập môi trường ảo (Khuyên dùng)
-```bash
-python -m venv venv
-# Windows:
-.\venv\Scripts\activate
-# Linux/macOS:
-source venv/bin/activate
-```
+## 🚀 Tính năng nổi bật
+- **Hybrid Retrieval**: Kết hợp FAISS (tìm kiếm tương đồng) và BM25 (tìm kiếm từ khóa).
+- **GraphRAG🌿**: Tự động trích xuất thực thể và quan hệ để giải quyết các câu hỏi yêu cầu suy luận kết nối thông tin.
+- **Reranking**: Sử dụng Cross-Encoder để tinh lọc top kết quả chính xác nhất.
+- **Self-RAG**: Tự động thẩm định câu trả lời để tránh ảo giác (hallucination).
+- **Advanced UI**: Hỗ trợ phản hồi dạng Streaming và hiển thị nguồn dẫn chi tiết.
 
-### 3. Cài đặt thư viện cần thiết
-```bash
-pip install -r requirements.txt
-```
-### 4. Cài đặt Ollama
+---
+
+## 🛠 Hướng dẫn thiết lập chi tiết
+
+### 1. Chuẩn bị môi trường
+- **Python**: Phiên bản 3.10 trở lên.
+- **Ollama**: Tải và cài đặt tại [ollama.com](https://ollama.com/).
+
+### 2. Cấu hình Mô hình (Ollama)
+Mở terminal và chạy các lệnh sau để tải các mô hình cần thiết:
 ```bash
 ollama pull qwen2.5:7b
 ```
 
-### 5. Chạy ứng dụng
+### 3. Cài đặt mã nguồn
+```bash
+cd SmartDoc-AI
+```
+
+### 4. Thiết lập Môi trường ảo
+```bash
+python -m venv venv
+.\venv\Scripts\activate
+```
+
+### 5. Cài đặt thư viện
+```bash
+pip install -r requirements.txt
+```
+
+### 6. Khởi chạy ứng dụng
 ```bash
 streamlit run app.py
 ```
@@ -58,3 +60,12 @@ SmartDoc-AI/
 4.  **Lưu trữ:** Các vector này được lưu vào FAISS để tìm kiếm nhanh.
 5.  **Hỏi đáp:** Khi có câu hỏi, hệ thống tìm các đoạn văn có nội dung gần nhất, gửi kèm vào Prompt để LLM (Qwen2.5) sinh câu trả lời chính xác dựa trên ngữ cảnh đó.
 
+---
+
+## 📁 Cấu trúc dự án
+- `app.py`: Điểm khởi đầu của ứng dụng Streamlit.
+- `services/`: Chứa logic lõi (Loader, Vector Store, RAG, Graph).
+- `core/`: Chứa cấu hình Prompt và khởi tạo mô hình.
+- `ui/`: Các thành phần giao diện người dùng.
+- `data/`: Lưu trữ cache FAISS và các tệp tin tạm.
+- `documentation/`: Chứa các tệp LaTeX cho báo cáo khoa học.
