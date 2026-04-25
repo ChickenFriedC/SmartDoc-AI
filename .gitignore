@@ -49,3 +49,8 @@ src/data/cache/
 *.faiss
 *.pkl
 performance_report.txt
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
