@@ -44,3 +44,8 @@ error.txt
 !*.pdf
 !*.docx
 !*.pptx
+
+src/data/cache/
+*.faiss
+*.pkl
+performance_report.txt
